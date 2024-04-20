@@ -43,70 +43,40 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 
 ################################################################3
-# Inicjalizacja i dopasowanie modelu Random Forest
-model_rf = RandomForestClassifier(random_state=42)
-model_rf.fit(X_train, y_train)
-
-# Ocena modelu
-y_pred = model_rf.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-print("Dokładność modelu Random Forest:", accuracy)
-
-
-
-
-################################################################
-import xgboost as xgb
-xgb_clf = xgb.XGBClassifier(objective='multi:softmax', num_class=4, random_state=42)
-xgb_clf.fit(X_train, y_train)
-
-# Przewidywanie klas dla danych testowych
-y_pred = xgb_clf.predict(X_test)
-
-# Obliczenie dokładności modelu
-accuracy = accuracy_score(y_test, y_pred)
-print("Dokładność modelu XGBoost:", accuracy)
-
-
-
-#########################################3
-
+from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
 
-# Inicjalizacja klasyfikatora Gradient Boosting
+# Definicja klasyfikatora Gradient Boosting
 gb_clf = GradientBoostingClassifier(random_state=42)
 
-# Dopasowanie modelu do danych treningowych
-gb_clf.fit(X_train, y_train)
+# Definicja siatki parametrów do przeszukania
+param_grid = {
+    'n_estimators': [100, 200, 300]
+    # 'learning_rate': [0.05, 0.1, 0.2],
+    # 'max_depth': [3, 4, 5],
+    # 'min_samples_split': [2, 5, 10],
+    # 'min_samples_leaf': [1, 2, 4],
+    # 'subsample': [0.8, 0.9, 1.0],
+    #'max_features': [None, 'sqrt', 'log2']
+}
+
+# Inicjalizacja GridSearchCV
+grid_search = GridSearchCV(estimator=gb_clf, param_grid=param_grid, cv=3, scoring='accuracy')
+
+# Dopasowanie GridSearch do danych treningowych
+grid_search.fit(X_train, y_train)
+
+# Najlepsze parametry znalezione przez GridSearch
+best_params = grid_search.best_params_
+print("Najlepsze parametry:", best_params)
+
+# Najlepszy model znaleziony przez GridSearch
+best_model = grid_search.best_estimator_
 
 # Przewidywanie klas dla danych testowych
-y_pred_gb = gb_clf.predict(X_test)
+y_pred = best_model.predict(X_test)
 
 # Obliczenie dokładności modelu
-accuracy_gb = accuracy_score(y_test, y_pred_gb)
-print("Dokładność modelu Gradient Boosting:", accuracy_gb)
-
-
-
-########################################
-
-from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
-
-# Inicjalizacja klasyfikatora SVM
-svm_clf = SVC(kernel='linear', decision_function_shape='ovr', random_state=42)
-
-# Dopasowanie modelu do danych treningowych
-svm_clf.fit(X_train, y_train)
-
-# Przewidywanie klas dla danych testowych
-y_pred_svm = svm_clf.predict(X_test)
-
-# Obliczenie dokładności modelu
-accuracy_svm = accuracy_score(y_test, y_pred_svm)
-print("Dokładność modelu SVM:", accuracy_svm)
-
-
-######################################################
-
+accuracy = accuracy_score(y_test, y_pred)
+print("Dokładność modelu Gradient Boosting:", accuracy)
