@@ -1,15 +1,28 @@
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.impute import SimpleImputer
 
 # Wczytanie danych
 data = pd.read_csv('train.csv')
 
 # Usunięcie brakujących wartości
-data = data.dropna().reset_index(drop=True)
 
+missing_values_per_column = data.isna().sum()
+print(missing_values_per_column)
+imp=SimpleImputer(strategy='most_frequent')
+list=['Ever_Married','Graduated','Profession','Var_1', 'Work_Experience', 'Family_Size']
+
+for i in list:
+    data[i]=imp.fit_transform(data[i].values.reshape(-1,1))
+
+
+missing_values_per_column = data.isna().sum()
+print(missing_values_per_column)
+data = data.dropna().reset_index(drop=True)
 # One-Hot Encoding dla kolumny 'Profession'
 profession_encoder = OneHotEncoder(sparse=False)
 profession_encoded = profession_encoder.fit_transform(data[['Profession']])
@@ -28,8 +41,11 @@ categorical_columns = ['Gender', 'Ever_Married', 'Graduated', 'Spending_Score', 
 for col in categorical_columns:
     data[col] = label_encoder.fit_transform(data[col])
 
+
+
 # Podział danych na zbiór treningowy i testowy
 X = data.drop('Segmentation', axis=1)
+X = X.drop('ID', axis=1)
 y = data['Segmentation']
 
 

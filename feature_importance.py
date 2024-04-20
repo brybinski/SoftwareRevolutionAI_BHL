@@ -1,15 +1,28 @@
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.impute import SimpleImputer
 
 # Wczytanie danych
 data = pd.read_csv('train.csv')
 
 # Usunięcie brakujących wartości
-data = data.dropna().reset_index(drop=True)
 
+missing_values_per_column = data.isna().sum()
+print(missing_values_per_column)
+imp=SimpleImputer(strategy='most_frequent')
+list=['Ever_Married','Graduated','Profession','Var_1', 'Work_Experience', 'Family_Size']
+
+for i in list:
+    data[i]=imp.fit_transform(data[i].values.reshape(-1,1))
+
+
+missing_values_per_column = data.isna().sum()
+print(missing_values_per_column)
+data = data.dropna().reset_index(drop=True)
 # One-Hot Encoding dla kolumny 'Profession'
 profession_encoder = OneHotEncoder(sparse=False)
 profession_encoded = profession_encoder.fit_transform(data[['Profession']])
@@ -28,11 +41,14 @@ categorical_columns = ['Gender', 'Ever_Married', 'Graduated', 'Spending_Score', 
 for col in categorical_columns:
     data[col] = label_encoder.fit_transform(data[col])
 
+
+
 # Podział danych na zbiór treningowy i testowy
 X = data.drop('Segmentation', axis=1)
+X = X.drop('ID', axis=1)
 y = data['Segmentation']
 
-
+Xc = X.copy()
 scaler = MinMaxScaler()
 X= scaler.fit_transform(X)
 
@@ -43,40 +59,19 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 
 ################################################################3
-from sklearn.model_selection import GridSearchCV
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.metrics import accuracy_score
+# Inicjalizacja i dopasowanie modelu Random Forest
+model_rf = RandomForestClassifier(random_state=42)
+model_rf.fit(X_train, y_train)
 
-# Definicja klasyfikatora Gradient Boosting
-gb_clf = GradientBoostingClassifier(random_state=42)
-
-# Definicja siatki parametrów do przeszukania
-param_grid = {
-    'n_estimators': [100, 200, 300]
-    # 'learning_rate': [0.05, 0.1, 0.2],
-    # 'max_depth': [3, 4, 5],
-    # 'min_samples_split': [2, 5, 10],
-    # 'min_samples_leaf': [1, 2, 4],
-    # 'subsample': [0.8, 0.9, 1.0],
-    #'max_features': [None, 'sqrt', 'log2']
-}
-
-# Inicjalizacja GridSearchCV
-grid_search = GridSearchCV(estimator=gb_clf, param_grid=param_grid, cv=3, scoring='accuracy')
-
-# Dopasowanie GridSearch do danych treningowych
-grid_search.fit(X_train, y_train)
-
-# Najlepsze parametry znalezione przez GridSearch
-best_params = grid_search.best_params_
-print("Najlepsze parametry:", best_params)
-
-# Najlepszy model znaleziony przez GridSearch
-best_model = grid_search.best_estimator_
-
-# Przewidywanie klas dla danych testowych
-y_pred = best_model.predict(X_test)
-
-# Obliczenie dokładności modelu
+# Ocena modelu
+y_pred = model_rf.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
-print("Dokładność modelu Gradient Boosting:", accuracy)
+print("Dokładność modelu Random Forest:", accuracy)
+
+
+
+feature_importance = model_rf.feature_importances_
+
+# Wyświetlenie istotności cech
+for i, importance in enumerate(feature_importance):
+    print("Feature {}: Importance = {:.4f}".format(Xc.columns[i], importance))
