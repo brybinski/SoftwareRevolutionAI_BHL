@@ -114,7 +114,7 @@ def calculate_shap(model, X, y, instance, cls_num, N=1000):
     # Iteracja po wierszach DataFrame i dodawanie każdej pary klucz-wartość do słownika
     for index, row in result.iterrows():
         key_value_dict[row['variable']] = row['contribution']
-    return key_value_dict
+    return  [(k, v) for k, v in key_value_dict.items()]
 
 
 # Definicja endpointu API
@@ -125,16 +125,15 @@ async def convert_to_numpy(input_data: InputData):
         data_dict = input_data.dict()
         data_array = np.array(list(data_dict.values()))
         
-        
-
 
         with open('model_rf.pkl', 'rb') as f:
             model = pickle.load(f)
         predicted_class = model.predict(data_array.reshape(1, -1)).tolist()
 
-        x = str(calculate_shap(model,X, y, data_array, predicted_class[0], 100))
-        # Zwrócenie tablicy NumPy jako odpowiedzi
-        return (predicted_class[0], x)
+        x = sorted(calculate_shap(model,X, y, data_array, predicted_class[0], 10))
+        # Zwrócenie tablicyNumPy jako odpowiedzi
+        
+        return ("Category: "+"ABCD"[predicted_class[0]], sorted(x,key=lambda l:l[1]))
     except Exception as e:
         # Obsługa błędu, jeśli wystąpi
         raise HTTPException(status_code=500, detail=str(e))
