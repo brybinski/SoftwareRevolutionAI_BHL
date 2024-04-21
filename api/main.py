@@ -37,7 +37,7 @@ class InputData(BaseModel):
 
 
 
-
+## Przygotowanie zbioru treningowego w potrzebnego do algorytmów wyjaśnialności
 # Wczytanie danych
 data = pd.read_csv('train.csv')
 
@@ -132,9 +132,10 @@ async def convert_to_numpy(input_data: InputData):
             model = pickle.load(f)
         predicted_class = model.predict(data_array.reshape(1, -1)).tolist()
 
-        x = str(calculate_shap(model,X, y, data_array, predicted_class[0], 100))
+        x = str(calculate_shap(model,X, y, data_array, predicted_class[0], 10))
         # Zwrócenie tablicy NumPy jako odpowiedzi
-        return (predicted_class[0], x)
+        alph = ['a', 'b', 'c', 'd']
+        return ({"segmentation" : alph[predicted_class[0]]}, x)
     except Exception as e:
         # Obsługa błędu, jeśli wystąpi
         raise HTTPException(status_code=500, detail=str(e))
