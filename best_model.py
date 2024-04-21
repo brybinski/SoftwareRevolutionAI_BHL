@@ -15,9 +15,15 @@ import matplotlib.pyplot as plt
 data = pd.read_csv('train.csv')
 
 # Usunięcie brakujących wartości
-data = data.dropna().reset_index(drop=True)
+data[['Ever_Married', 'Graduated']] = data[['Ever_Married', 'Graduated']].fillna(value='No')
 
-# One-Hot Encoding dla kolumny 'Profession'
+
+from sklearn.impute import SimpleImputer
+
+imputer = SimpleImputer(strategy='most_frequent')
+data = pd.DataFrame(imputer.fit_transform(data), columns=data.columns)
+
+#One-Hot Encoding dla kolumny 'Profession'
 profession_encoder = OneHotEncoder(sparse=False)
 profession_encoded = profession_encoder.fit_transform(data[['Profession']])
 profession_df = pd.DataFrame(profession_encoded, columns=profession_encoder.get_feature_names_out(['Profession']))
@@ -31,14 +37,68 @@ data = pd.concat([data.drop(['Var_1'], axis=1), var_1_df], axis=1)
 
 # Label Encoding dla kolumn kategorycznych
 label_encoder = LabelEncoder()
-categorical_columns = ['Gender', 'Ever_Married', 'Graduated', 'Spending_Score', 'Segmentation']
+
+data
+
+
+categorical_columns = ['Gender', 'Ever_Married', 'Graduated', 'Spending_Score']
 for col in categorical_columns:
     data[col] = label_encoder.fit_transform(data[col])
 
-# Podział danych na zbiór treningowy i testowy
-X = data.drop('Segmentation', axis=1)
+data
+
+
+
+columns_to_remove_outliers = ['Age', 'Work_Experience', 'Family_Size']
+
+# Usunięcie wartości odstających z wybranych kolumn
+for col in columns_to_remove_outliers:
+    mean = np.mean(data[col])
+    std_dev = np.std(data[col])
+    lower_bound = mean - 3 * std_dev
+    upper_bound = mean + 3 * std_dev
+    data = data[(data[col] >= lower_bound) & (data[col] <= upper_bound)]
+
+data
+
+# Podział danych na zbiór treningowy i testowy po usunięciu wartości odstających
+X = data.drop(['Segmentation', 'Gender'], axis=1)
 X = X.drop('ID', axis=1)
 y = data['Segmentation']
+
+
+
+
+
+
+
+
+
+
+
+
+# # Podział danych na zbiór treningowy i testowy
+# X = data.drop(['Segmentation', 'Gender'], axis=1)
+# X = X.drop('ID', axis=1)
+# y = data['Segmentation']
+
+
+
+
+
+
+
+
+from collections import Counter
+from imblearn.under_sampling import RandomUnderSampler
+undersampler = RandomUnderSampler(sampling_strategy='majority')
+
+X_resampled, y_resampled = undersampler.fit_resample(X, y)
+print("Rozkład klas po zrównoważeniu:", Counter(y_resampled))
+
+
+print("Rozkład klas przed zrównoważeniem:", Counter(y))
+undersampler = RandomUnderSampler(sampling_strategy='majority')
 
 
 scaler = MinMaxScaler()
@@ -49,6 +109,19 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # Skalowanie danych
 
+gb_classifier = GradientBoostingClassifier()
+
+# Trenowanie modelu Gradient Boosting Classifier
+gb_classifier.fit(X_train, y_train)
+
+# Predykcja na zbiorze testowym
+y_pred = gb_classifier.predict(X_test)
+
+
+
+# Obliczenie dokładności modelu
+accuracy = accuracy_score(y_test, y_pred)
+print("Dokładność modelu Gradient Boosting Classifier:", accuracy)
 
 ################################################################3 grid search ################################################################
 gb_clf = GradientBoostingClassifier()

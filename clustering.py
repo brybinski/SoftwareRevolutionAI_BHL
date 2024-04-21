@@ -45,35 +45,37 @@ scaler = MinMaxScaler()
 X= scaler.fit_transform(X)
 
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Skalowanie danych
 
 
 ################################################################3
-inertia = []
-for k in range(1, 11):
-    kmeans = KMeans(n_clusters=k, random_state=42)
+wcss = []
+for i in range(1, 11):
+    kmeans = KMeans(n_clusters=i, init='k-means++', random_state=42)
     kmeans.fit(X)
-    inertia.append(kmeans.inertia_)
+    wcss.append(kmeans.inertia_)
 
-# Wykres "łokcia" - pomocny w doborze optymalnej liczby klastrów
-plt.plot(range(1, 11), inertia, marker='o')
+# Wykres 'łokcia'
+plt.plot(range(1, 11), wcss)
+plt.title('Metoda łokcia')
 plt.xlabel('Liczba klastrów')
-plt.ylabel('Suma kwadratów odległości')
-plt.title('Metoda "łokcia"')
+plt.ylabel('Within Cluster Sum of Squares')
 plt.show()
 
-# Inicjalizacja i dopasowanie modelu k-średnich
-num_clusters = 3  # Ustawienie liczby klastrów
-kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+# Wybór ostatecznej liczby klastrów (np. 3 lub 4) i dopasowanie modelu
+num_clusters = 4
+kmeans = KMeans(n_clusters=num_clusters, init='k-means++', random_state=42)
 kmeans.fit(X)
 
-# Przewidywanie przynależności do klastrów dla każdego klienta
-labels = kmeans.predict(X)
-
 # Dodanie etykiet klastrów do danych
-data['Cluster'] = labels
+data['Cluster'] = kmeans.labels_
 
-# Wyświetlenie wyników
+# Wyświetlenie wyników segmentacji
+print("Segmentacja klientów:")
 print(data.head())
+
+from sklearn.metrics import accuracy_score
+
+accuracy = accuracy_score(y, data['Cluster'])
+print("Dokładność:", accuracy)
